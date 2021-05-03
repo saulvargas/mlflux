@@ -45,11 +45,16 @@ def _user_args_to_dict(arguments, argument_type="P"):
 # endregion
 
 
-def _copy_from_uri(project_path: Path, uri: str):
+def _copy_from_uri(project_path: Path, uri: str) -> Optional[Path]:
     # TODO: git uri
     # TODO: discard stuff from gitignore
     src_path = Path(uri)
     shutil.copytree(src_path, project_path, dirs_exist_ok=True)
+
+    base_path = project_path / "src"
+    src_zip_path = Path(shutil.make_archive(base_path, "zip", uri))
+
+    return src_zip_path
 
 
 def _setup_docker_image(project_path: Path) -> Optional[List[Dict[str, str]]]:
@@ -83,6 +88,16 @@ def _setup_docker_image(project_path: Path) -> Optional[List[Dict[str, str]]]:
         return [log["stream"] for log in docker_logs if "stream" in log]
 
 
+def _store_docker_logs(docker_logs):
+    with TemporaryDirectory() as tmp_dir:
+        docker_logs_path = Path(tmp_dir) / "docker.stdout.txt"
+        with docker_logs_path.open("w") as f:
+            for log in docker_logs:
+                f.write(log)
+
+        mlflow.log_artifact(docker_logs_path.as_posix(), "logs")
+
+
 def run(
     *,
     param_list: List[str] = typer.Option([], "-P", "--param-list"),
@@ -93,7 +108,7 @@ def run(
 
     with TemporaryDirectory() as tmp_dir:
         project_path = Path(tmp_dir)
-        _copy_from_uri(project_path, uri)
+        src_zip_path = _copy_from_uri(project_path, uri)
 
         docker_logs = _setup_docker_image(project_path)
 
@@ -103,10 +118,6 @@ def run(
             parameters=params_dict,
         )
 
-        docker_logs_path = (project_path / "docker.stdout.txt")
-        with docker_logs_path.open("w") as f:
-            for log in docker_logs:
-                f.write(log)
-
         with mlflow.start_run(mlflow_run.run_id):
-            mlflow.log_artifact(docker_logs_path.as_posix(), "logs")
+            _store_docker_logs(docker_logs)
+            mlflow.log_artifact(src_zip_path.as_posix())
