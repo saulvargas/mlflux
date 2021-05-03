@@ -1,10 +1,9 @@
 import shutil
 import sys
 import uuid
-from contextlib import contextmanager
 from pathlib import Path
-from typing import List
 from tempfile import TemporaryDirectory
+from typing import Dict, List, Optional
 
 import docker
 import mlflow
@@ -53,8 +52,7 @@ def _copy_from_uri(project_path: Path, uri: str):
     shutil.copytree(src_path, project_path, dirs_exist_ok=True)
 
 
-@contextmanager
-def _docker_image(project_path: Path):
+def _setup_docker_image(project_path: Path) -> Optional[List[Dict[str, str]]]:
     ml_project_path = project_path / "MLproject"
 
     with ml_project_path.open() as f:
@@ -82,11 +80,7 @@ def _docker_image(project_path: Path):
         with ml_project_path.open("w") as f:
             yaml.safe_dump(ml_project, f)
 
-        yield docker_logs
-
-        docker_client.images.remove(tag)
-    else:
-        yield None
+        return [log["stream"] for log in docker_logs if "stream" in log]
 
 
 def run(
@@ -101,9 +95,18 @@ def run(
         project_path = Path(tmp_dir)
         _copy_from_uri(project_path, uri)
 
-        with _docker_image(project_path) as docker_logs:
-            mlflow_run = mlflow.projects.run(
-                uri=project_path.as_posix(),
-                entry_point=entry_point,
-                parameters=params_dict,
-            )
+        docker_logs = _setup_docker_image(project_path)
+
+        mlflow_run = mlflow.projects.run(
+            uri=project_path.as_posix(),
+            entry_point=entry_point,
+            parameters=params_dict,
+        )
+
+        docker_logs_path = (project_path / "docker.stdout.txt")
+        with docker_logs_path.open("w") as f:
+            for log in docker_logs:
+                f.write(log)
+
+        with mlflow.start_run(mlflow_run.run_id):
+            mlflow.log_artifact(docker_logs_path.as_posix(), "logs")
