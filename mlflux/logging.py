@@ -4,7 +4,7 @@ import inspect
 import mlflow
 
 
-def mlflow_log_input_params(f):
+def log_input_params(f):
     @functools.wraps(f)
     def wrapper(**kwargs):
         default_params = {
