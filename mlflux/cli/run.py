@@ -163,3 +163,5 @@ def run(
             mlflow.log_artifact(docker_logs.as_posix(), "logs")
             mlflow.log_artifact(stdout.as_posix(), "logs")
             mlflow.log_artifact(stderr.as_posix(), "logs")
+            # TODO: set version
+            # TODO: set source
