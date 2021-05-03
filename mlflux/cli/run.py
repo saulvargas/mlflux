@@ -12,12 +12,11 @@ import typer
 import yaml
 from gitignore_parser import parse_gitignore
 from loguru import logger
-from mlflow.utils.logging_utils import MLFLOW_LOGGING_STREAM
 
 
 # region : copied from mlflow.cli
 def eprint(*args, **kwargs):
-    print(*args, file=MLFLOW_LOGGING_STREAM, **kwargs)
+    print(*args, file=sys.stderr, **kwargs)
 
 
 def _user_args_to_dict(arguments, argument_type="P"):
