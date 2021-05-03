@@ -151,6 +151,14 @@ python-versions = ">=3.4"
 smmap = ">=3.0.1,<5"
 
 [[package]]
+name = "gitignore-parser"
+version = "0.0.8"
+description = "A spec-compliant gitignore parser for Python 3.5+"
+category = "main"
+optional = false
+python-versions = "*"
+
+[[package]]
 name = "gitpython"
 version = "3.1.15"
 description = "Python Git Library"
@@ -618,7 +626,7 @@ dev = ["pytest (>=4.6.2)", "black (>=19.3b0)"]
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.8"
-content-hash = "513a01b8a50033cdbd1e757088ea65e8ee972b633b783dc2792519793674fe64"
+content-hash = "3e3717c4be677b5bc2a67719e1ee3d9daecbab192677afa0bfecafb0dfbb49c0"
 
 [metadata.files]
 alembic = [
@@ -671,6 +679,9 @@ flask = [
 gitdb = [
     {file = "gitdb-4.0.7-py3-none-any.whl", hash = "sha256:6c4cc71933456991da20917998acbe6cf4fb41eeaab7d6d67fbc05ecd4c865b0"},
     {file = "gitdb-4.0.7.tar.gz", hash = "sha256:96bf5c08b157a666fec41129e6d327235284cca4c81e92109260f353ba138005"},
+]
+gitignore-parser = [
+    {file = "gitignore_parser-0.0.8.tar.gz", hash = "sha256:b4e6e63d971810cbd2168bc02deddba719c07da655eaf56336d4bb0233ecef85"},
 ]
 gitpython = [
     {file = "GitPython-3.1.15-py3-none-any.whl", hash = "sha256:a77824e516d3298b04fb36ec7845e92747df8fcfee9cacc32dd6239f9652f867"},

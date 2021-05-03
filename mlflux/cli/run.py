@@ -1,3 +1,4 @@
+import os
 import shutil
 import sys
 import uuid
@@ -9,6 +10,7 @@ import docker
 import mlflow
 import typer
 import yaml
+from gitignore_parser import parse_gitignore
 from loguru import logger
 from mlflow.utils.logging_utils import MLFLOW_LOGGING_STREAM
 
@@ -47,12 +49,22 @@ def _user_args_to_dict(arguments, argument_type="P"):
 
 def _copy_from_uri(uri: str, project_path: Path, output_path) -> Optional[Path]:
     # TODO: git uri
-    # TODO: discard stuff from gitignore
     src_path = Path(uri)
-    shutil.copytree(src_path, project_path, dirs_exist_ok=True)
+
+    gitignore_path = src_path / ".gitignore"
+    if gitignore_path.exists():
+        matches = parse_gitignore(gitignore_path.as_posix())
+
+        def ignore(src, names):
+            return [f for f in names if matches(os.path.join(src, f)) or (f == ".git")]
+
+    else:
+        ignore = None
+
+    shutil.copytree(src_path, project_path, ignore=ignore, dirs_exist_ok=True)
 
     base_path = output_path / "src"
-    src_zip_path = Path(shutil.make_archive(base_path, "zip", uri))
+    src_zip_path = Path(shutil.make_archive(base_path, "zip", project_path))
 
     return src_zip_path
 
