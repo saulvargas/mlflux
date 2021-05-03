@@ -6,16 +6,19 @@ authors = ["Saúl Vargas <hello@saulvargas.es>"]
 
 [tool.poetry.dependencies]
 python = "^3.8"
-typer = "^0.3.2"
-loguru = "^0.5.3"
-gitignore-parser = "^0.0.8"
-PyYAML = "^5.4.1"
-docker = "^5.0.0"
-mlflow-skinny = "^1.16.0"
+typer = { version="^0.3.2", optional=true }
+loguru = { version="^0.5.3", optional=true }
+gitignore-parser = { version="^0.0.8", optional=true }
+PyYAML = { version="^5.4.1", optional=true }
+docker = { version="^5.0.0", optional=true }
 
 [tool.poetry.dev-dependencies]
 black = "^21.4b2"
 isort = "^5.8.0"
+mlflow = "^1.16.0"
+
+[tool.poetry.extras]
+cli = ["typer", "loguru", "gitignore-parser", "PyYAML", "docker"]
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
