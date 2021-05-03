@@ -3,7 +3,7 @@ import sys
 import uuid
 from pathlib import Path
 from tempfile import TemporaryDirectory
-from typing import Dict, List, Optional
+from typing import List, Optional
 
 import docker
 import mlflow
@@ -45,19 +45,19 @@ def _user_args_to_dict(arguments, argument_type="P"):
 # endregion
 
 
-def _copy_from_uri(project_path: Path, uri: str) -> Optional[Path]:
+def _copy_from_uri(uri: str, project_path: Path, output_path) -> Optional[Path]:
     # TODO: git uri
     # TODO: discard stuff from gitignore
     src_path = Path(uri)
     shutil.copytree(src_path, project_path, dirs_exist_ok=True)
 
-    base_path = project_path / "src"
+    base_path = output_path / "src"
     src_zip_path = Path(shutil.make_archive(base_path, "zip", uri))
 
     return src_zip_path
 
 
-def _setup_docker_image(project_path: Path) -> Optional[List[Dict[str, str]]]:
+def _setup_docker_image(project_path: Path, output_path: Path) -> Optional[Path]:
     ml_project_path = project_path / "MLproject"
 
     with ml_project_path.open() as f:
@@ -85,17 +85,22 @@ def _setup_docker_image(project_path: Path) -> Optional[List[Dict[str, str]]]:
         with ml_project_path.open("w") as f:
             yaml.safe_dump(ml_project, f)
 
-        return [log["stream"] for log in docker_logs if "stream" in log]
-
-
-def _store_docker_logs(docker_logs):
-    with TemporaryDirectory() as tmp_dir:
-        docker_logs_path = Path(tmp_dir) / "docker.stdout.txt"
+        docker_logs_path = output_path / "docker.stdout.txt"
         with docker_logs_path.open("w") as f:
             for log in docker_logs:
-                f.write(log)
+                try:
+                    f.write(log["stream"])
+                except KeyError:
+                    pass
 
-        mlflow.log_artifact(docker_logs_path.as_posix(), "logs")
+        return docker_logs_path
+
+
+def _store_docker_logs(docker_logs, output_path):
+    docker_logs_path = output_path / "docker.stdout.txt"
+    with docker_logs_path.open("w") as f:
+        for log in docker_logs:
+            f.write(log)
 
 
 def run(
@@ -106,11 +111,12 @@ def run(
 ):
     params_dict = _user_args_to_dict(param_list)
 
-    with TemporaryDirectory() as tmp_dir:
-        project_path = Path(tmp_dir)
-        src_zip_path = _copy_from_uri(project_path, uri)
+    with TemporaryDirectory() as project_dir, TemporaryDirectory() as output_dir:
+        project_path = Path(project_dir)
+        output_path = Path(output_dir)
 
-        docker_logs = _setup_docker_image(project_path)
+        src_zip_path = _copy_from_uri(uri, project_path, output_path)
+        docker_logs_path = _setup_docker_image(project_path, output_path)
 
         mlflow_run = mlflow.projects.run(
             uri=project_path.as_posix(),
@@ -119,5 +125,5 @@ def run(
         )
 
         with mlflow.start_run(mlflow_run.run_id):
-            _store_docker_logs(docker_logs)
             mlflow.log_artifact(src_zip_path.as_posix())
+            mlflow.log_artifact(docker_logs_path.as_posix(), "logs")
