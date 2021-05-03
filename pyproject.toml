@@ -1,0 +1,22 @@
+[tool.poetry]
+name = "mlflux"
+version = "0.0.1"
+description = ""
+authors = ["Saúl Vargas <hello@saulvargas.es>"]
+
+[tool.poetry.dependencies]
+python = "^3.8"
+mlflow = "^1.16.0"
+typer = "^0.3.2"
+loguru = "^0.5.3"
+
+[tool.poetry.dev-dependencies]
+black = "^21.4b2"
+isort = "^5.8.0"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry.scripts]
+mlflux = 'mlflux.cli:app'
